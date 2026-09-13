@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "postura_pose"
+version = "0.1.0"
+description = "MediaPipe pose detection component for Postura"
+requires-python = ">=3.9"
+dependencies = [
+    "streamlit>=1.40.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["postura_pose*"]
+
+[tool.setuptools.package-data]
+"postura_pose" = ["frontend/build/*"]
+
+[[tool.streamlit.component.components]]
+name = "postura_pose"
+asset_dir = "frontend/build"

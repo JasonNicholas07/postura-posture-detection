@@ -17,7 +17,7 @@ print("Posture Classification Training (baseline, no hyperparameter search)")
 
 # 1. define (setting)
 DATASET_PATH        = 'data/dataset_postur_more.csv'
-MODEL_OUTPUT_PATH   = 'model/posture_xgboost_baseline.pkl'
+MODEL_OUTPUT_PATH   = 'model/xgboost_final.pkl'
 TEST_SIZE           = 0.2
 RANDOM_STATE        = 67
 NORMAL_THRESHOLD    = 0.55  
@@ -271,7 +271,6 @@ y_pred = final_model.predict(X_test)
 
 # 8. THRESHOLD-BASED PREDICTION FUNCTION
 def predict_with_threshold(model, X, normal_idx, back_idx, normal_thresh=0.7, back_thresh=0.8):
-
     proba      = model.predict_proba(X)                   # (N, n_classes)
     n_classes  = proba.shape[1]
     predictions = []
@@ -345,6 +344,7 @@ for _, row in fi_desc.iterrows():
     print(f"  {row['feature']:<35} {row['importance']:.4f}  {bar}")
 
 # --- PLOT: CONFUSION MATRIX (heatmap, threshold-based) ---
+cm = confusion_matrix(y_test, y_pred_thresh)
 cm_norm = cm.astype(float) / cm.sum(axis=1, keepdims=True)
 
 fig, ax = plt.subplots(figsize=(7, 6))
