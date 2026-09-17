@@ -314,18 +314,18 @@ with col_dash:
     # )
 
     # === Bad posture timer ===
-    bad_secs = st.session_state.get("bad_seconds", 0.0)
-    if bad_secs > 0:
-        ratio = min(bad_secs / alert_secs, 1.0)
-        st.markdown(
-            f"""
-            <div class="metric-card">
-                <div class="section-label">Bad posture duration</div>
-                <div style="color:#fb923c;font-size:1.4rem;font-weight:700">
-                    {bad_secs:.0f}s / {alert_secs}s
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        st.progress(ratio)
+    # bad_secs = st.session_state.get("bad_seconds", 0.0)
+    # if bad_secs > 0:
+    #     ratio = min(bad_secs / alert_secs, 1.0)
+    #     st.markdown(
+    #         f"""
+    #         <div class="metric-card">
+    #             <div class="section-label">Bad posture duration</div>
+    #             <div style="color:#fb923c;font-size:1.4rem;font-weight:700">
+    #                 {bad_secs:.0f}s / {alert_secs}s
+    #             </div>
+    #         </div>
+    #         """,
+    #         unsafe_allow_html=True,
+    #     )
+    #     st.progress(ratio)
