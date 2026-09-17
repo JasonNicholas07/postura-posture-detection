@@ -278,7 +278,7 @@ col_video, col_dash = st.columns([3, 2], gap="large")
 
 with col_video:
     if not st.session_state.camera_enabled:
-        st.info("Click **Start Camera** to d begin detection.")
+        st.info("Click **Start Camera** to begin detection.")
         if st.button("Start Camera", type="primary", use_container_width=True):
             st.session_state.camera_enabled = True
             st.rerun()

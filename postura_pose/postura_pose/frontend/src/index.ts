@@ -3,7 +3,7 @@ import * as ort from "onnxruntime-web";
 import { FrontendRendererArgs } from "@streamlit/component-v2-lib";
 import { ONNX_B64 } from "./model_b64";
 
-// Feature order
+// Feature order MUST match Python training (32 features)
 const FEATURES = [
   "y2", "y5", "z11", "z12",
   "y2_y5_ratio", "z11_z12_diff", "z11_z12_ratio",
@@ -19,29 +19,28 @@ const FEATURES = [
   "mean_visibility", "min_visibility",
 ];
 
-// LabelEncoder sorts classes alphabetically: Back, Forward, Normal
 const CLASS_NAMES = ["Back", "Forward", "Normal"];
 
 const SMOOTHER_WINDOW = 5;
 const SEND_INTERVAL_MS = 500;
 
-// --- Style theme ---
-const THEME_BG      = "#0a0a0a";
-const THEME_PANEL   = "#141414";
-const THEME_ACCENT  = "#facc15";
-const THEME_TEXT    = "#f5f5f5";
-const THEME_MUTED   = "#9ca3af";
-const THEME_DANGER  = "#ef4444";
+// --- Calm palette for the overlay ---
+const COLOR_NORMAL  = "#7c9c7e"; // sage green
+const COLOR_FORWARD = "#c99b6b"; // soft caramel
+const COLOR_BACK    = "#c47a7a"; // dusty rose
+const COLOR_MUTED   = "#8a94a6"; // cool gray
+const COLOR_TEXT    = "#2d3748"; // soft charcoal
 
 const renderer = async (args: FrontendRendererArgs) => {
   const { parentElement, setStateValue } = args;
 
   const wrapper = document.createElement("div");
   wrapper.style.position = "relative";
-  wrapper.style.background = THEME_PANEL;
-  wrapper.style.borderRadius = "12px";
+  wrapper.style.background = "#ffffff";
+  wrapper.style.borderRadius = "24px";
   wrapper.style.overflow = "hidden";
-  wrapper.style.border = "1px solid #1f1f1f";
+  wrapper.style.border = "1px solid #eef0f3";
+  wrapper.style.boxShadow = "0 2px 16px rgba(45, 55, 72, 0.06)";
   parentElement.appendChild(wrapper);
 
   const video = document.createElement("video");
@@ -50,7 +49,7 @@ const renderer = async (args: FrontendRendererArgs) => {
   video.muted = true;
   video.style.width = "100%";
   video.style.display = "block";
-  video.style.borderRadius = "12px";
+  video.style.borderRadius = "24px";
   wrapper.appendChild(video);
 
   const canvas = document.createElement("canvas");
@@ -61,11 +60,9 @@ const renderer = async (args: FrontendRendererArgs) => {
   wrapper.appendChild(canvas);
 
   try {
-    // --- Load ONNX model ---
     const onnxBytes = Uint8Array.from(atob(ONNX_B64), (c) => c.charCodeAt(0));
     const session = await ort.InferenceSession.create(onnxBytes);
 
-    // --- Load MediaPipe ---
     const vision = await FilesetResolver.forVisionTasks(
       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
     );
@@ -78,7 +75,6 @@ const renderer = async (args: FrontendRendererArgs) => {
       numPoses: 1,
     });
 
-    // --- Webcam ---
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { width: 640, height: 480 },
     });
@@ -91,44 +87,59 @@ const renderer = async (args: FrontendRendererArgs) => {
     video.addEventListener("loadedmetadata", resizeCanvas);
     video.addEventListener("play", resizeCanvas);
 
-    // --- Yellow status banner ---
+    // --- Soft rounded status pill on the video ---
     const drawBanner = (className: string) => {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const pillX = 10;
-      const pillY = 10;
-      const pillW = 300;
-      const pillH = 52;
-      const r = 10;
+      const pillX = 16;
+      const pillY = 16;
+      const pillH = 44;
+      const pillW = 200;
+      const r = pillH / 2;   // fully rounded ends
 
-      // Rounded black pill with yellow border
+      // Rounded pill path
       ctx.beginPath();
       ctx.moveTo(pillX + r, pillY);
       ctx.lineTo(pillX + pillW - r, pillY);
-      ctx.quadraticCurveTo(pillX + pillW, pillY, pillX + pillW, pillY + r);
-      ctx.lineTo(pillX + pillW, pillY + pillH - r);
-      ctx.quadraticCurveTo(pillX + pillW, pillY + pillH, pillX + pillW - r, pillY + pillH);
+      ctx.arc(pillX + pillW - r, pillY + r, r, -Math.PI / 2, Math.PI / 2);
       ctx.lineTo(pillX + r, pillY + pillH);
-      ctx.quadraticCurveTo(pillX, pillY + pillH, pillX, pillY + pillH - r);
-      ctx.lineTo(pillX, pillY + r);
-      ctx.quadraticCurveTo(pillX, pillY, pillX + r, pillY);
+      ctx.arc(pillX + r, pillY + r, r, Math.PI / 2, -Math.PI / 2);
       ctx.closePath();
-      ctx.fillStyle = "rgba(10,10,10,0.85)";
+
+      // Soft translucent white fill
+      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
       ctx.fill();
-      ctx.strokeStyle = THEME_ACCENT;
+      ctx.strokeStyle = "rgba(45, 55, 72, 0.06)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Colored status dot
+      const dotColor =
+        className === "Normal"  ? COLOR_NORMAL  :
+        className === "Forward" ? COLOR_FORWARD :
+        className === "Back"    ? COLOR_BACK    : COLOR_MUTED;
+
+      ctx.beginPath();
+      ctx.arc(pillX + 22, pillY + pillH / 2, 7, 0, Math.PI * 2);
+      ctx.fillStyle = dotColor;
+      ctx.fill();
+
+      // Soft shadow ring around the dot
+      ctx.beginPath();
+      ctx.arc(pillX + 22, pillY + pillH / 2, 10, 0, Math.PI * 2);
+      ctx.strokeStyle = dotColor + "33";
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      // Yellow text
-      ctx.fillStyle = THEME_ACCENT;
-      ctx.font = "bold 22px sans-serif";
+      // Text
+      ctx.fillStyle = COLOR_TEXT;
+      ctx.font = "600 16px -apple-system, BlinkMacSystemFont, sans-serif";
       ctx.textBaseline = "middle";
-      ctx.fillText(`STATUS: ${className}`, pillX + 14, pillY + pillH / 2);
+      ctx.fillText(className, pillX + 40, pillY + pillH / 2 + 1);
     };
 
-    // --- Buffers for temporal features ---
     const frameBuffer: number[][] = [];
     const classHistory: number[] = [];
     let lastSent = 0;
@@ -289,7 +300,7 @@ const renderer = async (args: FrontendRendererArgs) => {
     detectLoop();
   } catch (err) {
     console.error("Setup error:", err);
-    parentElement.innerHTML = `<div style="color:${THEME_DANGER};background:${THEME_BG};padding:8px;font-family:sans-serif;border-radius:8px;">Error: ${err}</div>`;
+    parentElement.innerHTML = `<div style="color:#c47a7a;background:#ffffff;padding:16px;font-family:sans-serif;border-radius:16px;border:1px solid #eef0f3;">Error: ${err}</div>`;
   }
 };
 
