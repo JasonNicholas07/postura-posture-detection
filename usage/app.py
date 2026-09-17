@@ -191,6 +191,7 @@ def send_desktop_notification(title: str, body: str):
                 new Notification(title, {{
                     body: body,
                     tag: "postura-alert",
+                    renotify: true,
                     requireInteraction: true
                 }});
             }}
