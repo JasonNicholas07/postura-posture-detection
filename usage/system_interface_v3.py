@@ -22,9 +22,7 @@ except ImportError:
     print("plyer not found -- falling back to console alert.\n")
 
 
-# ==========================================
-# 1. CONFIG & CONSTANTS (v2 Logic)
-# ==========================================
+# 1. CONFIG & CONSTANTS
 BAD_POSTURE_ALERT_SECONDS = 10   
 ALERT_COOLDOWN_SECONDS    = 60   
 FEEDBACK_LOG_PATH         = 'data/posture_feedback.csv'
@@ -54,9 +52,7 @@ UPPER_CONNECTIONS = [
 ]
 
 
-# ==========================================
 # 2. CORE CLASSES (v2 Logic)
-# ==========================================
 class TemporalSmoother:
     def __init__(self, window: int = 15):
         self.window  = window
@@ -190,9 +186,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     return feat[SELECTED_FEATURES]
 
 
-# ==========================================
 # 3. DESKTOP PET OVERLAY (Tkinter Port)
-# ==========================================
 class DesktopPet(ctk.CTkToplevel):
     def __init__(self, master):
         super().__init__(master)
@@ -265,9 +259,7 @@ class DesktopPet(ctk.CTkToplevel):
             self.bubble.pack_forget()
 
 
-# ==========================================
 # 4. MAIN APP GUI (v4 Dashboard + v2 Logic)
-# ==========================================
 class PostureApp(ctk.CTk):
     def __init__(self):
         super().__init__()

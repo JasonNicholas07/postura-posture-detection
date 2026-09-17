@@ -17,20 +17,88 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    .block-container { padding-top: 1.5rem; }
-    .stProgress > div > div { border-radius: 999px; }
+    * App background override */
+    .stApp {
+        background-color: #0a0a0a;
+    }
+    .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 2rem;
+    }
+
+    /* Kill default Streamlit dividers */
+    hr { border-color: #262626; }
+
+    /* Cards */
     .metric-card {
-        background: #1e293b;
+        background: #141414;
         border-radius: 12px;
         padding: 16px 20px;
         margin-bottom: 12px;
+        border: 1px solid #1f1f1f;
     }
-    .section-label {
-        color: #64748b;
-        font-size: 0.75rem;
-        font-weight: 600;
+    .metric-card .section-label {
+        color: #9ca3af;
+        font-size: 0.72rem;
+        font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
+    }
+    .status-value {
+        font-size: 1.8rem;
+        font-weight: 800;
+        margin-top: 4px;
+        color: #facc15;
+    }
+    .status-waiting { color: #9ca3af !important; }
+    .status-normal  { color: #facc15 !important; }
+    .status-forward { color: #f97316 !important; }
+    .status-back    { color: #f59e0b !important; }
+
+    /* Sidebar */
+    section[data-testid="stSidebar"] {
+        background-color: #0f0f0f;
+        border-right: 1px solid #1f1f1f;
+    }
+    section[data-testid="stSidebar"] h2 {
+        color: #facc15;
+    }
+
+    /* Sliders */
+    .stSlider > div > div > div > div {
+        background: #facc15 !important;
+    }
+
+    /* Progress bar */
+    .stProgress > div > div {
+        border-radius: 999px;
+    }
+    .stProgress > div > div > div > div {
+        background-color: #facc15 !important;
+    }
+
+    /* Primary button */
+    button[kind="primary"] {
+        background-color: #facc15 !important;
+        color: #0a0a0a !important;
+        font-weight: 700 !important;
+        border: none !important;
+    }
+    button[kind="primary"]:hover {
+        background-color: #eab308 !important;
+    }
+
+    /* Headings */
+    h1, h2, h3 {
+        color: #f5f5f5;
+    }
+
+    /* Yellow horizontal divider utility */
+    .y-divider {
+        height: 2px;
+        background: #facc15;
+        margin: 10px 0 18px 0;
+        border-radius: 2px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -111,7 +179,7 @@ def update_notifier(smooth_class, alert_secs):
 
 
 def send_desktop_notification(title: str, body: str):
-    """Fire a browser desktop notification (works when tab is in the background)."""
+    """Fire a browser desktop notification"""
     js = f"""
     <script>
     (function() {{
@@ -200,9 +268,6 @@ with st.sidebar:
             st.caption(f"{len(fb_df)} feedback records logged")
         except Exception:
             pass
-
-    st.divider()
-    st.caption(f"Classes: {', '.join(LE_CLASSES)}")
 
 
 # MAIN LAYOUT
