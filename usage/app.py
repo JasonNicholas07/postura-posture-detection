@@ -207,7 +207,7 @@ with st.sidebar:
 
 # MAIN LAYOUT
 st.markdown("## Postura")
-st.caption("### Real time Posture Reminder")
+st.markdown("### Real time Posture Reminder")
 
 col_video, col_dash = st.columns([3, 2], gap="large")
 
