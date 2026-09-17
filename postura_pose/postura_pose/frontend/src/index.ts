@@ -210,10 +210,10 @@ const renderer = async (args: FrontendRendererArgs) => {
         const r = decode(buffer[i]);
         y2_sum += r.y2; y5_sum += r.y5; z11_sum += r.z11; z12_sum += r.z12;
       }
-      const y2_moving_avg = y2_sum / k;
-      const y5_moving_avg = y5_sum / k;
-      const z11_moving_avg = z11_sum / k;
-      const z12_moving_avg = z12_sum / k;
+      const y2_moving_avg = y2_sum / n;
+      const y5_moving_avg = y5_sum / n;
+      const z11_moving_avg = z11_sum / n;
+      const z12_moving_avg = z12_sum / n;
 
       const y2_normalized = y2 / (y5 + eps);
       const z11_normalized = z11 / (z12 + eps);
@@ -254,6 +254,8 @@ const renderer = async (args: FrontendRendererArgs) => {
     };
 
     const detectLoop = async () => {
+      const TEMPORAL_WINDOW = 16;
+
       if (video.readyState >= 2) {
         const t = performance.now();
         const results = poseLandmarker.detectForVideo(video, t);
@@ -263,9 +265,9 @@ const renderer = async (args: FrontendRendererArgs) => {
           const flat = lm.flatMap((p) => [p.x, p.y, p.z, p.visibility ?? 0]);
 
           frameBuffer.push(flat);
-          if (frameBuffer.length > 3) frameBuffer.shift();
+          if (frameBuffer.length > TEMPORAL_WINDOW) frameBuffer.shift();
 
-          if (frameBuffer.length === 3) {
+          if (frameBuffer.length === TEMPORAL_WINDOW) {
             try {
               const features = computeFeatures(frameBuffer);
               const idx = await predictClass(features);
