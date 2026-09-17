@@ -1,7 +1,4 @@
 # Postura - Real-Time Posture Detection (Browser-Side Inference)
-# All pose detection AND classification happen in the browser.
-# Python only handles the timer, notifications, and feedback logging.
-
 import os
 import time
 import csv
@@ -11,9 +8,7 @@ import streamlit.components.v1 as components
 from postura_pose import postura_pose
 
 
-# ============================================================
 # PAGE CONFIG
-# ============================================================
 st.set_page_config(
     page_title="Postura",
     layout="wide",
@@ -41,9 +36,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ============================================================
 # CONSTANTS
-# ============================================================
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
 
@@ -55,9 +48,7 @@ ALERT_COOLDOWN   = 60
 LE_CLASSES = ["Back", "Forward", "Normal"]
 
 
-# ============================================================
 # HELPERS
-# ============================================================
 def log_feedback(model_class, user_class, feature_row=None):
     os.makedirs(os.path.dirname(FEEDBACK_LOG), exist_ok=True)
     exists = os.path.exists(FEEDBACK_LOG) and os.path.getsize(FEEDBACK_LOG) > 0
@@ -75,9 +66,7 @@ def log_feedback(model_class, user_class, feature_row=None):
         writer.writerow(row)
 
 
-# ============================================================
 # SESSION STATE
-# ============================================================
 defaults = {
     "camera_enabled":   False,
     "smooth_class":     "Waiting",
@@ -93,9 +82,7 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 
-# ============================================================
 # NOTIFICATION LOGIC
-# ============================================================
 def update_notifier(smooth_class, alert_secs):
     now = time.time()
     is_bad = smooth_class not in (None, "Normal", "Waiting", "No pose")
@@ -156,9 +143,7 @@ def send_desktop_notification(title: str, body: str):
     components.html(js, height=0, width=0)
 
 
-# ============================================================
-# VIDEO FRAGMENT (isolates the component from full-page reruns)
-# ============================================================
+# VIDEO FRAGMENT
 @st.fragment
 def video_fragment():
     result = postura_pose(key="postura")
@@ -170,9 +155,7 @@ def video_fragment():
         st.info("Waiting for pose data...")
 
 
-# ============================================================
 # SIDEBAR
-# ============================================================
 with st.sidebar:
     st.markdown("## Postura")
     st.divider()
@@ -222,16 +205,14 @@ with st.sidebar:
     st.caption(f"Classes: {', '.join(LE_CLASSES)}")
 
 
-# ============================================================
 # MAIN LAYOUT
-# ============================================================
 st.markdown("## Real-Time Posture Detection")
 
 col_video, col_dash = st.columns([3, 2], gap="large")
 
 with col_video:
     if not st.session_state.camera_enabled:
-        st.info("Click **Start Camera** to grant webcam access and begin detection.")
+        st.info("Click **Start Camera** to d begin detection.")
         if st.button("Start Camera", type="primary", use_container_width=True):
             st.session_state.camera_enabled = True
             st.rerun()
@@ -247,24 +228,24 @@ with col_dash:
     if update_notifier(smooth, alert_secs):
         send_desktop_notification(
             "Postura Alert",
-            f"Fix your posture! Detected: {smooth}",
+            f"Fix your posture!",
         )
 
     # === Current prediction ===
-    st.markdown(
-        f"""
-        <div class="metric-card">
-            <div class="section-label">Current posture</div>
-            <div style="font-size:1.6rem;font-weight:800;margin-top:4px">
-                {smooth}
-            </div>
-            <div style="color:#64748b;font-size:0.8rem;margin-top:4px">
-                Raw: {raw}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    # st.markdown(
+    #     f"""
+    #     <div class="metric-card">
+    #         <div class="section-label">Current posture</div>
+    #         <div style="font-size:1.6rem;font-weight:800;margin-top:4px">
+    #             {smooth}
+    #         </div>
+    #         <div style="color:#64748b;font-size:0.8rem;margin-top:4px">
+    #             Raw: {raw}
+    #         </div>
+    #     </div>
+    #     """,
+    #     unsafe_allow_html=True,
+    # )
 
     # === Bad posture timer ===
     bad_secs = st.session_state.get("bad_seconds", 0.0)
