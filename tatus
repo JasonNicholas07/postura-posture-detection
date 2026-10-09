@@ -1,0 +1,5 @@
+[33m158605d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m notif
+[33m32f6ef0[m remove timer
+[33m3317ae7[m del
+[33m47bc600[m Fix temporal features: use full 16-frame window, sliding inference
+[33me4aa4b2[m init py
