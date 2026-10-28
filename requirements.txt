@@ -1,2 +1,2 @@
 streamlit==1.55.0
-postura_pose @ git+https://github.com/JasonNicholas07/postura-posture-detection.git@main#subdirectory=postura_pose
+postura_pose @ git+https://github.com/JasonNicholas07/posture-detection.git@main#subdirectory=postura_pose
