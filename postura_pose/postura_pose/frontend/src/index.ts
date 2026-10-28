@@ -1,5 +1,6 @@
 import { FilesetResolver, PoseLandmarker } from "@mediapipe/tasks-vision";
-import * as ort from "onnxruntime-web";
+// CPU-only build; vite.config.ts rewrites this to the jsDelivr URL so the wasm isn't inlined
+import * as ort from "onnxruntime-web/wasm";
 import { FrontendRendererArgs } from "@streamlit/component-v2-lib";
 import { ONNX_B64 } from "./model_b64";
 
@@ -60,25 +61,29 @@ const renderer = async (args: FrontendRendererArgs) => {
   wrapper.appendChild(canvas);
 
   try {
+    // Camera and both models load in parallel so the video shows before inference is ready
     const onnxBytes = Uint8Array.from(atob(ONNX_B64), (c) => c.charCodeAt(0));
-    const session = await ort.InferenceSession.create(onnxBytes);
-
-    const vision = await FilesetResolver.forVisionTasks(
-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
-    );
-    const poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath:
-          "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
-      },
-      runningMode: "VIDEO",
-      numPoses: 1,
-    });
-
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: 640, height: 480 },
-    });
-    video.srcObject = stream;
+    const [stream, session, poseLandmarker] = await Promise.all([
+      navigator.mediaDevices
+        .getUserMedia({ video: { width: 640, height: 480 } })
+        .then((s) => {
+          video.srcObject = s;
+          return s;
+        }),
+      ort.InferenceSession.create(onnxBytes),
+      FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+      ).then((vision) =>
+        PoseLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath:
+              "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+          },
+          runningMode: "VIDEO",
+          numPoses: 1,
+        })
+      ),
+    ]);
 
     const resizeCanvas = () => {
       canvas.width = video.videoWidth || 640;
