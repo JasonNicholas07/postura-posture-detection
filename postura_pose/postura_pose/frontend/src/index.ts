@@ -32,7 +32,18 @@ const COLOR_BACK    = "#c47a7a"; // dusty rose
 const COLOR_MUTED   = "#8a94a6"; // cool gray
 const COLOR_TEXT    = "#2d3748"; // soft charcoal
 
-const renderer = async (args: FrontendRendererArgs) => {
+// Resources the cleanup function must release; setup runs async so they fill in later
+type Handles = {
+  stopped: boolean;
+  rafId: number;
+  stream: MediaStream | null;
+  landmarker: PoseLandmarker | null;
+};
+
+const releaseCamera = (h: Handles) =>
+  h.stream?.getTracks().forEach((t) => t.stop());
+
+const setup = async (args: FrontendRendererArgs, h: Handles) => {
   const { parentElement, setStateValue } = args;
 
   const wrapper = document.createElement("div");
@@ -63,12 +74,13 @@ const renderer = async (args: FrontendRendererArgs) => {
   try {
     // Camera and both models load in parallel so the video shows before inference is ready
     const onnxBytes = Uint8Array.from(atob(ONNX_B64), (c) => c.charCodeAt(0));
-    const [stream, session, poseLandmarker] = await Promise.all([
+    const [, session, poseLandmarker] = await Promise.all([
       navigator.mediaDevices
         .getUserMedia({ video: { width: 640, height: 480 } })
         .then((s) => {
-          video.srcObject = s;
-          return s;
+          h.stream = s;
+          if (h.stopped) releaseCamera(h);
+          else video.srcObject = s;
         }),
       ort.InferenceSession.create(onnxBytes),
       FilesetResolver.forVisionTasks(
@@ -84,6 +96,11 @@ const renderer = async (args: FrontendRendererArgs) => {
         })
       ),
     ]);
+    h.landmarker = poseLandmarker;
+    if (h.stopped) {
+      poseLandmarker.close();
+      return;
+    }
 
     const resizeCanvas = () => {
       canvas.width = video.videoWidth || 640;
@@ -260,6 +277,7 @@ const renderer = async (args: FrontendRendererArgs) => {
 
     const detectLoop = async () => {
       const TEMPORAL_WINDOW = 16;
+      if (h.stopped) return;
 
       if (video.readyState >= 2) {
         const t = performance.now();
@@ -301,14 +319,34 @@ const renderer = async (args: FrontendRendererArgs) => {
           drawBanner("No pose");
         }
       }
-      requestAnimationFrame(detectLoop);
+      if (!h.stopped) h.rafId = requestAnimationFrame(detectLoop);
     };
 
     detectLoop();
   } catch (err) {
+    // A model may fail after the camera opened; don't leave it locked
+    releaseCamera(h);
+    if (h.stopped) return;
     console.error("Setup error:", err);
-    parentElement.innerHTML = `<div style="color:#c47a7a;background:#ffffff;padding:16px;font-family:sans-serif;border-radius:16px;border:1px solid #eef0f3;">Error: ${err}</div>`;
+    const msg =
+      err instanceof DOMException && err.name === "NotReadableError"
+        ? "Camera is in use by another app or tab. Close it and reload this page."
+        : `Error: ${err}`;
+    parentElement.innerHTML = `<div style="color:#c47a7a;background:#ffffff;padding:16px;font-family:sans-serif;border-radius:16px;border:1px solid #eef0f3;">${msg}</div>`;
   }
+};
+
+const renderer = (args: FrontendRendererArgs) => {
+  const h: Handles = { stopped: false, rafId: 0, stream: null, landmarker: null };
+  setup(args, h);
+  // Returned synchronously so Streamlit can release the camera on unmount
+  return () => {
+    h.stopped = true;
+    cancelAnimationFrame(h.rafId);
+    releaseCamera(h);
+    h.landmarker?.close();
+    args.parentElement.replaceChildren();
+  };
 };
 
 export default renderer;
